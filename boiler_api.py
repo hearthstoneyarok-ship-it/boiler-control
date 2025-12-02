@@ -16,7 +16,17 @@ def login(session: requests.Session):
         "pass": PASSWORD
     }
     r = session.post(url, json=payload)
-    return r.json().get("err") == 0
+
+    print("LOGIN RESPONSE STATUS:", r.status_code)
+    print("LOGIN RESPONSE TEXT:", r.text[:500])  # первые 500 символов
+
+    try:
+        data = r.json()
+        return data.get("err") == 0
+    except Exception as e:
+        print("JSON decode error:", e)
+        return False
+
 
 def set_temperature(session: requests.Session, value: float):
     url = "https://boiler.stout.ru/api/dashboard/"

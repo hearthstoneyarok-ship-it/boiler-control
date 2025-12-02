@@ -2,9 +2,10 @@ name: Boiler Auto Control
 
 on:
   schedule:
-    - cron: "0 20 * * *"   # 23:00 MSK
-    - cron: "0 4 * * *"    # 07:00 MSK
-  workflow_dispatch:
+    - cron: "0 20 * * *"   # 23:00 МСК
+    - cron: "0 4 * * *"    # 07:00 МСК
+
+  workflow_dispatch: {}  # запуск вручную
 
 jobs:
   set_temp_jobs:
@@ -22,26 +23,28 @@ jobs:
     - name: Install dependencies
       run: pip install requests
 
-    - name: Detect UTC hour
-      run: |
-        HOUR=$(date -u +"%H")
-        echo "Current UTC hour: $HOUR"
-        echo "HOUR=$HOUR" >> $GITHUB_ENV
-
-    - name: Set night temperature (23:00 MSK / 20:00 UTC)
-      if: env.HOUR == '20'
+    # >>> РУЧНОЙ ТЕСТ <<<
+    - name: Manual test – set temp to 40°C
+      if: github.event_name == 'workflow_dispatch'
       env:
         STOUT_LOGIN: ${{ secrets.STOUT_LOGIN }}
         STOUT_PASSWORD: ${{ secrets.STOUT_PASSWORD }}
       run: |
-        echo "Setting night temp 50°C"
-        python boiler_api.py 50
+        echo "Manual test run: Setting temperature to 40°C"
+        python boiler_api.py 40
 
-    - name: Set morning temperature (07:00 MSK / 04:00 UTC)
-      if: env.HOUR == '04'
+    # Ночной режим
+    - name: Set night temperature (23:00 MSK)
+      if: github.event.schedule == '0 20 * * *'
       env:
         STOUT_LOGIN: ${{ secrets.STOUT_LOGIN }}
         STOUT_PASSWORD: ${{ secrets.STOUT_PASSWORD }}
-      run: |
-        echo "Setting morning temp 8°C"
-        python boiler_api.py 8
+      run: python boiler_api.py 50
+
+    # Утренний режим
+    - name: Set morning temperature (07:00 MSK)
+      if: github.event.schedule == '0 4 * * *'
+      env:
+        STOUT_LOGIN: ${{ secrets.STOUT_LOGIN }}
+        STOUT_PASSWORD: ${{ secrets.STOUT_PASSWORD }}
+      run: python boiler_api.py 8

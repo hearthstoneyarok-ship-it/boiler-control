@@ -2,12 +2,9 @@ name: Boiler Auto Control
 
 on:
   schedule:
-    # 23:00 по Москве (UTC+3) → это 20:00 UTC
-    - cron: "0 20 * * *"
-    # 07:00 по Москве → это 04:00 UTC
-    - cron: "0 4 * * *"
-
-  workflow_dispatch: {}  # вручную запустить
+    - cron: "0 20 * * *"   # 23:00 MSK
+    - cron: "0 4 * * *"    # 07:00 MSK
+  workflow_dispatch:
 
 jobs:
   set_temp_jobs:
@@ -25,15 +22,21 @@ jobs:
     - name: Install dependencies
       run: pip install requests
 
-    - name: Set night temperature (23:00 MSK)
-      if: github.event.schedule == '0 20 * * *'
+    # Определяем текущее время запуска
+    - name: Detect trigger time
+      id: time
+      run: |
+        echo "hour=$(date -u +'%H')" >> $GITHUB_OUTPUT
+
+    - name: Set night temperature (23:00 MSK → 20:00 UTC)
+      if: steps.time.outputs.hour == '20'
       env:
         STOUT_LOGIN: ${{ secrets.STOUT_LOGIN }}
         STOUT_PASSWORD: ${{ secrets.STOUT_PASSWORD }}
       run: python boiler_api.py 50
 
-    - name: Set morning temperature (07:00 MSK)
-      if: github.event.schedule == '0 4 * * *'
+    - name: Set morning temperature (07:00 MSK → 04:00 UTC)
+      if: steps.time.outputs.hour == '04'
       env:
         STOUT_LOGIN: ${{ secrets.STOUT_LOGIN }}
         STOUT_PASSWORD: ${{ secrets.STOUT_PASSWORD }}

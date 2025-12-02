@@ -1,65 +1,57 @@
-import sys
 import requests
-import json
+import sys
 import os
 
-BASE_URL = "https://boiler.stout.ru"
+LOGIN = os.getenv("STOUT_LOGIN")
+PASSWORD = os.getenv("STOUT_PASSWORD")
 
-LOGIN_URL = f"{BASE_URL}/login.php"
-API_URL = f"{BASE_URL}/api/dashboard/"
+DEVICE_ID = "74664"
+ENV_ID = 11  # отопление
 
-# креды берём из GitHub Secrets
-LOGIN = os.environ.get("STOUT_LOGIN")
-PASSWORD = os.environ.get("STOUT_PASSWORD")
-
-if not LOGIN or not PASSWORD:
-    print("Ошибка: отсутствуют логин или пароль. Добавьте STOUT_LOGIN и STOUT_PASSWORD в GitHub Secrets.")
-    sys.exit(1)
-
-def login(session):
-    """Авторизация на сайте (имитация обычного входа через форму)"""
+def login(session: requests.Session):
+    url = "https://boiler.stout.ru/auth/"
     payload = {
+        "action": "login",
         "login": LOGIN,
-        "pswd": PASSWORD,
-        "submit": "login"
+        "pass": PASSWORD
     }
+    r = session.post(url, json=payload)
+    return r.json().get("err") == 0
 
-    resp = session.post(LOGIN_URL, data=payload)
-    if "dashboard" not in resp.text and resp.status_code != 200:
-        print("⚠️ Не удалось войти. Ответ сервера:")
-        print(resp.text)
-        sys.exit(1)
-
-    print("✔ Авторизация успешна")
-
-def set_temperature(session, temp):
-    """Отправляет команду setEnvGoal"""
+def set_temperature(session: requests.Session, value: float):
+    url = "https://boiler.stout.ru/api/dashboard/"
+    
     payload = {
         "action": "setEnvGoal",
-        "deviceId": "74664",
+        "deviceId": DEVICE_ID,
         "data": {
-            "id": 11,
-            "goal": temp,
+            "id": ENV_ID,
+            "goal": value,
             "resetMode": 0
         }
     }
 
-    headers = {"Content-Type": "application/json"}
-
-    resp = session.post(API_URL, data=json.dumps(payload), headers=headers)
-    print("Ответ сервера:", resp.text)
+    r = session.post(url, json=payload)
+    return r.text
 
 def main():
     if len(sys.argv) < 2:
-        print("Использование: python boiler_api.py <температура>")
-        sys.exit(1)
+        print("Ошибка: укажите температуру, например: python boiler_api.py 50")
+        return
 
-    temp = float(sys.argv[1])
-    print(f"Устанавливаю температуру: {temp}°C...")
+    value = float(sys.argv[1])
+    print(f"Устанавливаю температуру: {value}°C...")
 
-    session = requests.Session()
-    login(session)
-    set_temperature(session, temp)
+    s = requests.Session()
+
+    if login(s):
+        print("✔ Авторизация успешна")
+    else:
+        print("❌ Ошибка авторизации")
+        return
+
+    response = set_temperature(s, value)
+    print("Ответ сервера:", response)
 
 if __name__ == "__main__":
     main()

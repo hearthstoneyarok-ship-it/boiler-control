@@ -1,14 +1,14 @@
-name: Boiler Auto Control
+name: Boiler Test Run
 
 on:
   schedule:
-    - cron: "0 20 * * *"   # 23:00 МСК
-    - cron: "0 4 * * *"    # 07:00 МСК
+    # 17:10 MSK → 14:10 UTC
+    - cron: "10 14 * * *"
 
-  workflow_dispatch: {}  # запуск вручную
+  workflow_dispatch: {}  # ручной запуск
 
 jobs:
-  set_temp_jobs:
+  test_run:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,27 +23,15 @@ jobs:
     - name: Install dependencies
       run: pip install requests
 
-    # >>> РУЧНОЙ ТЕСТ <<<
-    - name: Manual test – set temp to 40°C
+    - name: Run test temperature at 17:10 MSK
+      if: github.event.schedule == '10 14 * * *'
+      env:
+        STOUT_LOGIN: ${{ secrets.STOUT_LOGIN }}
+        STOUT_PASSWORD: ${{ secrets.STOUT_PASSWORD }}
+      run: python boiler_api.py 8
+
+    - name: Manual run (for testing)
       if: github.event_name == 'workflow_dispatch'
-      env:
-        STOUT_LOGIN: ${{ secrets.STOUT_LOGIN }}
-        STOUT_PASSWORD: ${{ secrets.STOUT_PASSWORD }}
-      run: |
-        echo "Manual test run: Setting temperature to 40°C"
-        python boiler_api.py 40
-
-    # Ночной режим
-    - name: Set night temperature (23:00 MSK)
-      if: github.event.schedule == '0 20 * * *'
-      env:
-        STOUT_LOGIN: ${{ secrets.STOUT_LOGIN }}
-        STOUT_PASSWORD: ${{ secrets.STOUT_PASSWORD }}
-      run: python boiler_api.py 50
-
-    # Утренний режим
-    - name: Set morning temperature (07:00 MSK)
-      if: github.event.schedule == '0 4 * * *'
       env:
         STOUT_LOGIN: ${{ secrets.STOUT_LOGIN }}
         STOUT_PASSWORD: ${{ secrets.STOUT_PASSWORD }}

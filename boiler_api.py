@@ -8,48 +8,46 @@ PASSWORD = os.getenv("STOUT_PASSWORD")
 DEVICE_ID = "74664"
 ENV_ID = 11  # отопление
 
-# Ходим не напрямую на boiler.stout.ru, а через Cloudflare Worker
-AUTH_URL = "https://small-brook-8889.hearthstoneyarok.workers.dev/auth/"
-API_URL = "https://small-brook-8889.hearthstoneyarok.workers.dev/api/dashboard/"
+AUTH_URL = "https://boiler.stout.ru/auth/"
+DASHBOARD_URL = "https://boiler.stout.ru/api/dashboard/"
 
-# Общие заголовки, чтобы выглядеть как обычный браузер / XHR
-DEFAULT_HEADERS = {
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                  "AppleWebKit/537.36 (KHTML, like Gecko) "
+                  "Chrome/120.0.0.0 Safari/537.36",
     "Accept": "application/json, text/javascript, */*; q=0.01",
-    "Content-Type": "application/json;charset=UTF-8",
+    "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
     "X-Requested-With": "XMLHttpRequest",
-    "Referer": "https://boiler.stout.ru/",
-    "User-Agent": (
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    ),
+    "Origin": "https://boiler.stout.ru",
+    "Referer": "https://boiler.stout.ru/login.php",
 }
 
 
 def login(session: requests.Session) -> bool:
     payload = {
-        "action": "login",
         "login": LOGIN,
         "pass": PASSWORD,
+        # если на фронте есть “remember me” — его обычно тоже шлют
+        "remember": "1",
     }
 
-    r = session.post(AUTH_URL, json=payload, headers={"Content-Type": "application/json"})
+    r = session.post(AUTH_URL, data=payload, headers=HEADERS)
 
     print("LOGIN RESPONSE STATUS:", r.status_code)
 
-    content_type = r.headers.get("Content-Type", "")
-    if "application/json" not in content_type:
-        print("LOGIN RESPONSE (non-JSON):", r.text[:500])
-        return False
-
+    # Пытаемся сначала распарсить JSON
     try:
         data = r.json()
+        print("LOGIN RESPONSE JSON:", data)
+        # предполагаем, что err == 0 — успешный логин
+        return data.get("err") == 0
     except Exception as e:
-        print("JSON decode error:", e)
-        print("RAW LOGIN RESPONSE:", r.text[:500])
+        # Если пришёл HTML / текст — выводим начало тела для дебага
+        print("LOGIN RESPONSE is not JSON:", type(e), e)
+        print("LOGIN RESPONSE TEXT (first 500 chars):")
+        print(r.text[:500])
         return False
-
-    print("LOGIN JSON:", data)
-    return data.get("err") == 0
 
 
 def set_temperature(session: requests.Session, value: float) -> str:
@@ -63,8 +61,7 @@ def set_temperature(session: requests.Session, value: float) -> str:
         },
     }
 
-    r = session.post(SET_TEMP_URL, json=payload, headers=DEFAULT_HEADERS, timeout=15)
-    print("SET TEMP RESPONSE STATUS:", r.status_code)
+    r = session.post(DASHBOARD_URL, json=payload, headers=HEADERS)
     return r.text
 
 

@@ -1,4 +1,4 @@
-name: Boiler Cron Debug
+name: Boiler Cron Debug1
 
 on:
   # Временно — каждые 5 минут

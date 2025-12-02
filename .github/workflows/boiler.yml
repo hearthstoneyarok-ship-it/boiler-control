@@ -2,8 +2,10 @@ name: Boiler Test Run
 
 on:
   schedule:
-    # 17:10 MSK → 14:10 UTC
-    - cron: "10 14 * * *"
+    # 23:00 MSK → 20:00 UTC
+    - cron: "0 20 * * *"
+    # 07:00 MSK → 04:00 UTC
+    - cron: "0 4 * * *"
 
   workflow_dispatch: {}  # ручной запуск
 
@@ -23,13 +25,23 @@ jobs:
     - name: Install dependencies
       run: pip install requests
 
-    - name: Run test temperature at 17:10 MSK
-      if: github.event.schedule == '10 14 * * *'
+    # Ночной режим: 23:00 МСК → 50°C
+    - name: Set temperature to 50 at 23:00 MSK
+      if: github.event_name == 'schedule' && github.event.schedule == '0 20 * * *'
+      env:
+        STOUT_LOGIN: ${{ secrets.STOUT_LOGIN }}
+        STOUT_PASSWORD: ${{ secrets.STOUT_PASSWORD }}
+      run: python boiler_api.py 50
+
+    # Утренний режим: 07:00 МСК → 8°C
+    - name: Set temperature to 8 at 07:00 MSK
+      if: github.event_name == 'schedule' && github.event.schedule == '0 4 * * *'
       env:
         STOUT_LOGIN: ${{ secrets.STOUT_LOGIN }}
         STOUT_PASSWORD: ${{ secrets.STOUT_PASSWORD }}
       run: python boiler_api.py 8
 
+    # Ручной запуск для тестов — всегда ставит 8°C
     - name: Manual run (for testing)
       if: github.event_name == 'workflow_dispatch'
       env:

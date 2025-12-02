@@ -9,8 +9,8 @@ DEVICE_ID = "74664"
 ENV_ID = 11  # отопление
 
 # Ходим не напрямую на boiler.stout.ru, а через Cloudflare Worker
-LOGIN_URL = "https://small-brook-8889.hearthstoneyarok.workers.dev/auth/"
-SET_TEMP_URL = "https://small-brook-8889.hearthstoneyarok.workers.dev/api/dashboard/"
+AUTH_URL = "https://small-brook-8889.hearthstoneyarok.workers.dev/auth/"
+API_URL = "https://small-brook-8889.hearthstoneyarok.workers.dev/api/dashboard/"
 
 # Общие заголовки, чтобы выглядеть как обычный браузер / XHR
 DEFAULT_HEADERS = {
@@ -32,7 +32,7 @@ def login(session: requests.Session) -> bool:
         "pass": PASSWORD,
     }
 
-    r = session.post(LOGIN_URL, json=payload, headers=DEFAULT_HEADERS, timeout=15)
+    r = session.post(AUTH_URL, json=payload, headers={"Content-Type": "application/json"})
 
     print("LOGIN RESPONSE STATUS:", r.status_code)
 

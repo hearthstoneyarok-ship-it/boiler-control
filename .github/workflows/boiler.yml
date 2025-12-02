@@ -22,22 +22,26 @@ jobs:
     - name: Install dependencies
       run: pip install requests
 
-    # Определяем текущее время запуска
-    - name: Detect trigger time
-      id: time
+    - name: Detect UTC hour
       run: |
-        echo "hour=$(date -u +'%H')" >> $GITHUB_OUTPUT
+        HOUR=$(date -u +"%H")
+        echo "Current UTC hour: $HOUR"
+        echo "HOUR=$HOUR" >> $GITHUB_ENV
 
-    - name: Set night temperature (23:00 MSK → 20:00 UTC)
-      if: steps.time.outputs.hour == '20'
+    - name: Set night temperature (23:00 MSK / 20:00 UTC)
+      if: env.HOUR == '20'
       env:
         STOUT_LOGIN: ${{ secrets.STOUT_LOGIN }}
         STOUT_PASSWORD: ${{ secrets.STOUT_PASSWORD }}
-      run: python boiler_api.py 50
+      run: |
+        echo "Setting night temp 50°C"
+        python boiler_api.py 50
 
-    - name: Set morning temperature (07:00 MSK → 04:00 UTC)
-      if: steps.time.outputs.hour == '04'
+    - name: Set morning temperature (07:00 MSK / 04:00 UTC)
+      if: env.HOUR == '04'
       env:
         STOUT_LOGIN: ${{ secrets.STOUT_LOGIN }}
         STOUT_PASSWORD: ${{ secrets.STOUT_PASSWORD }}
-      run: python boiler_api.py 8
+      run: |
+        echo "Setting morning temp 8°C"
+        python boiler_api.py 8

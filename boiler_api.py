@@ -8,17 +8,20 @@ PASSWORD = os.getenv("STOUT_PASSWORD")
 DEVICE_ID = "74664"
 ENV_ID = 11  # отопление
 
-LOGIN_URL = "https://boiler.stout.ru/auth/"
-SET_TEMP_URL = "https://boiler.stout.ru/api/dashboard/"
+# Ходим не напрямую на boiler.stout.ru, а через Cloudflare Worker
+LOGIN_URL = "https://small-brook-8889.hearthstoneyarok.workers.dev/auth/"
+SET_TEMP_URL = "https://small-brook-8889.hearthstoneyarok.workers.dev/api/dashboard/"
 
-# Общие заголовки, чтобы мы выглядели как обычный браузер
+# Общие заголовки, чтобы выглядеть как обычный браузер / XHR
 DEFAULT_HEADERS = {
     "Accept": "application/json, text/javascript, */*; q=0.01",
     "Content-Type": "application/json;charset=UTF-8",
     "X-Requested-With": "XMLHttpRequest",
     "Referer": "https://boiler.stout.ru/",
-    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "User-Agent": (
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    ),
 }
 
 
@@ -33,7 +36,6 @@ def login(session: requests.Session) -> bool:
 
     print("LOGIN RESPONSE STATUS:", r.status_code)
 
-    # Если сервер внезапно вернул HTML / не json — показываем кусок и выходим
     content_type = r.headers.get("Content-Type", "")
     if "application/json" not in content_type:
         print("LOGIN RESPONSE (non-JSON):", r.text[:500])

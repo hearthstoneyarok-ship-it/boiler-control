@@ -27,7 +27,7 @@ jobs:
 
     # Ночной режим: 23:00 МСК → 50°C
     - name: Set temperature to 50 at 23:00 MSK
-      if: github.event_name == 'schedule' && github.event.schedule == '0 20 * * *'
+      if: github.event_name == 'schedule' && github.event.schedule == '20 19 * * *'
       env:
         STOUT_LOGIN: ${{ secrets.STOUT_LOGIN }}
         STOUT_PASSWORD: ${{ secrets.STOUT_PASSWORD }}
@@ -35,7 +35,7 @@ jobs:
 
     # Утренний режим: 07:00 МСК → 8°C
     - name: Set temperature to 8 at 07:00 MSK
-      if: github.event_name == 'schedule' && github.event.schedule == '0 4 * * *'
+      if: github.event_name == 'schedule' && github.event.schedule == '20 3 * * *'
       env:
         STOUT_LOGIN: ${{ secrets.STOUT_LOGIN }}
         STOUT_PASSWORD: ${{ secrets.STOUT_PASSWORD }}

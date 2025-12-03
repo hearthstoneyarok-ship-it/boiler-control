@@ -28,7 +28,7 @@ jobs:
     - name: Install dependencies
       run: pip install requests
 
-    # Ночной режим: хотим к ~23:00 МСК → ставим 50°C
+    # Ночной режим: хотим к ~23:00 МСК → 50°C
     - name: Set temperature to 50 (night)
       if: github.event_name == 'schedule' && github.event.schedule == '20 19 * * *'
       env:
@@ -36,13 +36,35 @@ jobs:
         STOUT_PASSWORD: ${{ secrets.STOUT_PASSWORD }}
       run: python boiler_api.py 50
 
-    # Утренний режим: хотим к ~07:00 МСК → ставим 8°C
+    - name: Notify Telegram (night 50°C)
+      if: github.event_name == 'schedule' && github.event.schedule == '20 19 * * *'
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      run: |
+        TEXT="Бойлер: установлена температура 50°C (ночной режим). GitHub Actions отработал успешно."
+        curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+          -d chat_id="${TELEGRAM_CHAT_ID}" \
+          -d text="$TEXT"
+
+    # Утренний режим: хотим к ~07:00 МСК → 8°C
     - name: Set temperature to 8 (morning)
       if: github.event_name == 'schedule' && github.event.schedule == '20 3 * * *'
       env:
         STOUT_LOGIN: ${{ secrets.STOUT_LOGIN }}
         STOUT_PASSWORD: ${{ secrets.STOUT_PASSWORD }}
       run: python boiler_api.py 8
+
+    - name: Notify Telegram (morning 8°C)
+      if: github.event_name == 'schedule' && github.event.schedule == '20 3 * * *'
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      run: |
+        TEXT="Бойлер: установлена температура 8°C (утренний режим). GitHub Actions отработал успешно."
+        curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+          -d chat_id="${TELEGRAM_CHAT_ID}" \
+          -d text="$TEXT"
 
     # Ручной запуск для тестов — всегда ставит 8°C
     - name: Manual run (for testing)
@@ -51,3 +73,14 @@ jobs:
         STOUT_LOGIN: ${{ secrets.STOUT_LOGIN }}
         STOUT_PASSWORD: ${{ secrets.STOUT_PASSWORD }}
       run: python boiler_api.py 8
+
+    - name: Notify Telegram (manual run)
+      if: github.event_name == 'workflow_dispatch'
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      run: |
+        TEXT="Бойлер: ручной запуск из GitHub Actions. Установлена температура 8°C."
+        curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+          -d chat_id="${TELEGRAM_CHAT_ID}" \
+          -d text="$TEXT"

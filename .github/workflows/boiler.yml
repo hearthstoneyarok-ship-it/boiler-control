@@ -3,9 +3,9 @@ name: Boiler Test Run
 on:
   schedule:
     # 23:00 MSK → 20:00 UTC
-    - cron: "0 20 * * *"
+    - cron: "20 19 * * *"
     # 07:00 MSK → 04:00 UTC
-    - cron: "0 4 * * *"
+    - cron: "20 3 * * *"
 
   workflow_dispatch: {}  # ручной запуск
 
